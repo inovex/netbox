@@ -45,6 +45,13 @@ _patterns = [
 
 ]
 
+if settings.ADFS_CONFIGURED:
+        # OAuth
+    _patterns +=  [
+        url(r'^oauth2/', include('django_auth_adfs.urls', namespace='auth_adfs'))
+    ]
+
+
 if settings.DEBUG:
     import debug_toolbar
     _patterns += [

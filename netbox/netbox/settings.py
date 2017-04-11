@@ -55,16 +55,15 @@ try:
 except ImportError:
     LDAP_CONFIGURED = False
 
+AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
+
 # LDAP configuration (optional)
 if LDAP_CONFIGURED:
     try:
         import ldap
         import django_auth_ldap
         # Prepend LDAPBackend to the default ModelBackend
-        AUTHENTICATION_BACKENDS = [
-            'django_auth_ldap.backend.LDAPBackend',
-            'django.contrib.auth.backends.ModelBackend',
-        ]
+        AUTHENTICATION_BACKENDS.insert(0, 'django_auth_ldap.backend.LDAPBackend')
         # Optionally disable strict certificate checking
         if LDAP_IGNORE_CERT_ERRORS:
             ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
@@ -75,6 +74,13 @@ if LDAP_CONFIGURED:
     except ImportError:
         raise ImproperlyConfigured("LDAP authentication has been configured, but django-auth-ldap is not installed. "
                                    "You can remove netbox/ldap_config.py to disable LDAP.")
+
+try:
+    from netbox.adfs_config import *
+    ADFS_CONFIGURED = True
+except ImportError:
+    ADFS_CONFIGURED = False
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -150,6 +156,13 @@ TEMPLATES = [
     },
 ]
 
+
+if ADFS_CONFIGURED:
+    AUTHENTICATION_BACKENDS.insert(0, 'django_auth_adfs.backend.AdfsBackend')
+    INSTALLED_APPS = tuple(list(INSTALLED_APPS) + ['django_auth_adfs'])
+    TEMPLATES[0]['OPTIONS']['context_processors'] += ['django_auth_adfs.context_processors.adfs_url']
+    MIDDLEWARE = tuple(list(MIDDLEWARE) + ['django_auth_adfs.middleware.LoginRequiredMiddleware'])
+
 # WSGI
 WSGI_APPLICATION = 'netbox.wsgi.application'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -201,3 +214,5 @@ try:
     HOSTNAME = socket.gethostname()
 except:
     HOSTNAME = 'localhost'
+
+
